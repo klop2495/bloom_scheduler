@@ -1,6 +1,6 @@
 from datetime import datetime
 
-# Пример существующих событий
+# Пример текущих событий (можно заменить загрузкой из календаря)
 current_events = [
     {
         "id": "event_001",
@@ -20,29 +20,32 @@ def check_schedule(events):
             new_start = datetime.fromisoformat(new_event["start"])
             new_id = new_event["id"]
         except KeyError as e:
-            results.append({"id": new_event.get("id", "unknown"), "status": "error", "reason": f"Missing field: {str(e)}"})
+            results.append({
+                "id": new_event.get("id", "unknown"),
+                "status": "error",
+                "reason": f"Missing field: {str(e)}"
+            })
             continue
 
-        conflict = None
+        conflict_found = False
         for evt in current_events:
             existing_end = datetime.fromisoformat(evt["end"])
             diff = (new_start - existing_end).total_seconds() / 60
             if 0 <= diff < BUFFER_MINUTES:
-                conflict = {
-                    "id": evt["id"],
-                    "title": evt["title"],
-                    "end": evt["end"]
-                }
                 results.append({
-                    "id": new_id,
                     "status": "conflict",
-                    "conflict_with": conflict,
-                    "reason": f"Недостаточно времени на дорогу: только {int(diff)} мин при минимуме {BUFFER_MINUTES}."
+                    "conflict_with": {
+                        "id": evt["id"],
+                        "title": evt["title"],
+                        "end": evt["end"]
+                    },
+                    "reason": f"Недостаточно времени на дорогу: только {int(diff)} минут при минимуме {BUFFER_MINUTES}."
                 })
+                conflict_found = True
                 break
 
-        if not conflict:
-            results.append({"id": new_id, "status": "confirmed"})
+        if not conflict_found:
+            results.append({"status": "confirmed"})
 
     return results
 
