@@ -2,6 +2,13 @@ from flask import Flask, request, jsonify
 from scheduler import check_schedule, current_events
 from google_calendar import add_event_to_calendar
 import os
+import base64
+
+# Распаковка credentials из переменной окружения (если есть)
+if "GOOGLE_CREDENTIALS_B64" in os.environ:
+    decoded = base64.b64decode(os.environ["GOOGLE_CREDENTIALS_B64"])
+    with open("credentials.json", "wb") as f:
+        f.write(decoded)
 
 app = Flask(__name__)
 
@@ -34,3 +41,4 @@ def schedule_info():
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port, debug=True)
+
