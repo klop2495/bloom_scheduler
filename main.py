@@ -57,8 +57,9 @@ def schedule():
         return jsonify({"error": "Missing 'events' field in request."}), 400
 
     results = []
-    for event in data["events"]:
-        result = check_schedule(event)
+    schedule_results = check_schedule(data["events"])  # ✅ передаём весь список
+
+    for event, result in zip(data["events"], schedule_results):
         if result["status"] == "confirmed":
             added_event = add_event_to_calendar(event)
             result["google_event_id"] = added_event.get("id")
