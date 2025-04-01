@@ -7,7 +7,8 @@ app = Flask(__name__)
 @app.route("/api/bloom/schedule", methods=["POST"])
 def schedule():
     data = request.json
-    result = check_schedule(data)
+    first_event = data["events"][0]  # ✅ исправлено здесь
+    result = check_schedule(first_event)
     return jsonify(result)
 
 if __name__ == "__main__":
