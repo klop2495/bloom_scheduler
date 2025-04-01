@@ -1,6 +1,6 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 
-# Пример текущих событий (можно заменить загрузкой из календаря)
+# Пример существующих событий
 current_events = [
     {
         "id": "event_001",
@@ -12,19 +12,37 @@ current_events = [
 
 BUFFER_MINUTES = 120
 
-def check_schedule(new_event):
-    new_start = datetime.fromisoformat(new_event["start"])
-    for evt in current_events:
-        existing_end = datetime.fromisoformat(evt["end"])
-        diff = (new_start - existing_end).total_seconds() / 60
-        if 0 <= diff < BUFFER_MINUTES:
-            return {
-                "status": "conflict",
-                "conflict_with": {
+def check_schedule(events):
+    results = []
+
+    for new_event in events:
+        try:
+            new_start = datetime.fromisoformat(new_event["start"])
+            new_id = new_event["id"]
+        except KeyError as e:
+            results.append({"id": new_event.get("id", "unknown"), "status": "error", "reason": f"Missing field: {str(e)}"})
+            continue
+
+        conflict = None
+        for evt in current_events:
+            existing_end = datetime.fromisoformat(evt["end"])
+            diff = (new_start - existing_end).total_seconds() / 60
+            if 0 <= diff < BUFFER_MINUTES:
+                conflict = {
                     "id": evt["id"],
                     "title": evt["title"],
                     "end": evt["end"]
-                },
-                "reason": f"Недостаточно времени на дорогу: только {int(diff)} минут при минимуме {BUFFER_MINUTES}."
-            }
-    return {"status": "confirmed"}
+                }
+                results.append({
+                    "id": new_id,
+                    "status": "conflict",
+                    "conflict_with": conflict,
+                    "reason": f"Недостаточно времени на дорогу: только {int(diff)} мин при минимуме {BUFFER_MINUTES}."
+                })
+                break
+
+        if not conflict:
+            results.append({"id": new_id, "status": "confirmed"})
+
+    return results
+
