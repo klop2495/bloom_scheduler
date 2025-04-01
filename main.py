@@ -1,36 +1,36 @@
 from flask import Flask, request, jsonify
+from scheduler import check_schedule, current_events
+from google_calendar import add_event_to_calendar
+import os
 
 app = Flask(__name__)
 
-# Маршрут для корневого URL: возвращает простое сообщение, что сервис работает
-@app.route('/')
+@app.route("/", methods=["GET"])
 def index():
     return "Bloom Scheduler API is running"
 
-# Существующий POST-маршрут для /api/bloom/schedule
-@app.route('/api/bloom/schedule', methods=['POST'])
+@app.route("/api/bloom/schedule", methods=["POST"])
 def bloom_schedule():
-    # Предполагаем, что клиент отправляет JSON с параметрами расписания.
     data = request.get_json()
-    if not data:
-        # Если данных нет, возвращаем ошибку 400
-        return jsonify({"error": "No data provided"}), 400
+    if not data or "events" not in data:
+        return jsonify({"error": "No 'events' field provided"}), 400
 
-    # *** Здесь находится основная логика планирования (schedule) ***
-    # Например, получение данных расписания из `data`,
-    # выполнение необходимых действий (сохранение задания, запуск процесса и т.д.)
-    # В данном шаблоне кода мы просто эмулируем успешный ответ.
+    results = []
+    for event in data["events"]:
+        result = check_schedule(event)
+        if result["status"] == "confirmed":
+            add_event_to_calendar(event)
+        results.append({"event": event, "result": result})
 
-    # Формируем ответ (например, подтверждение запланированной задачи)
-    response = {
-        "message": "Bloom schedule request received",
-        "scheduled_data": data
-    }
-    return jsonify(response), 200
+    return jsonify({"results": results}), 200
 
-# Запуск приложения на локальном сервере (при необходимости)
-# При деплое на Render этот блок обычно не обязателен,
-# так как Gunicorn сам подхватывает приложение через переменную `app`.
+@app.route("/api/bloom/schedule", methods=["GET"])
+def schedule_info():
+    return jsonify({
+        "message": "Current schedule",
+        "events": current_events
+    })
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
-
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host='0.0.0.0', port=port, debug=True)
