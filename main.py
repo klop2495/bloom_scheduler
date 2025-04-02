@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from flask_cors import CORS  # <-- Добавлено
+from flask_cors import CORS  # <-- Добавлено для CORS
 from scheduler import check_schedule, current_events
 import os
 import json
@@ -9,7 +9,7 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
 app = Flask(__name__)
-CORS(app)  # <-- Инициализация CORS (разрешаем кросс-доменные запросы)
+CORS(app)  # Разрешаем кросс-доменные запросы
 
 SCOPES = ['https://www.googleapis.com/auth/calendar']
 GOOGLE_CREDENTIALS_B64 = os.environ.get("GOOGLE_CREDENTIALS_B64")
@@ -55,6 +55,7 @@ def get_upcoming_events(calendar_id=CALENDAR_ID, max_results=10):
     ).execute()
     return events_result.get('items', [])
 
+# Эндпоинт для Bloom-агента: добавление/получение событий
 @app.route("/api/bloom/schedule", methods=["POST"])
 def schedule():
     data = request.json
@@ -86,6 +87,26 @@ def calendar_events():
         return jsonify({"events": events})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+# Новый эндпоинт для Editor-агента: генерация анонсов
+@app.route("/api/editor/announcements", methods=["GET"])
+def generate_announcements():
+    # Пример набора анонсов для генерации
+    announcements = [
+        {
+            "title": "Съёмка в Музее Орсе",
+            "description": "Эксклюзивный репортаж о новой выставке.",
+            "start": "2025-04-05T10:00:00",
+            "end": "2025-04-05T11:00:00"
+        },
+        {
+            "title": "Фотосессия на крыше",
+            "description": "Невероятные виды города с высоты.",
+            "start": "2025-04-06T12:00:00",
+            "end": "2025-04-06T13:30:00"
+        }
+    ]
+    return jsonify({"announcements": announcements})
 
 @app.route('/')
 def index():
