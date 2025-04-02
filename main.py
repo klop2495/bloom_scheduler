@@ -11,6 +11,7 @@ app = Flask(__name__)
 
 SCOPES = ['https://www.googleapis.com/auth/calendar']
 GOOGLE_CREDENTIALS_B64 = os.environ.get("GOOGLE_CREDENTIALS_B64")
+CALENDAR_ID = "0d99fafbf4dd933f0f27214b0c476cbdd4d5f306c5305226dea75a0159dce950@group.calendar.google.com"
 _calendar_service = None
 
 def get_calendar_service():
@@ -31,16 +32,18 @@ def get_calendar_service():
         _calendar_service = build('calendar', 'v3', credentials=credentials)
         return _calendar_service
 
-def add_event_to_calendar(event_data, calendar_id='primary'):
+def add_event_to_calendar(event_data, calendar_id=CALENDAR_ID):
     service = get_calendar_service()
     event = {
         'summary': event_data['title'],
         'start': {'dateTime': event_data['start'], 'timeZone': 'Europe/Paris'},
         'end': {'dateTime': event_data['end'], 'timeZone': 'Europe/Paris'},
     }
-    return service.events().insert(calendarId=calendar_id, body=event).execute()
+    created_event = service.events().insert(calendarId=calendar_id, body=event).execute()
+    print("Создано событие:", created_event.get("id"))
+    return created_event
 
-def get_upcoming_events(calendar_id='primary', max_results=10):
+def get_upcoming_events(calendar_id=CALENDAR_ID, max_results=10):
     service = get_calendar_service()
     events_result = service.events().list(
         calendarId=calendar_id,
@@ -57,9 +60,9 @@ def schedule():
         return jsonify({"error": "Missing 'events' field in request."}), 400
 
     results = []
-    schedule_results = check_schedule(data["events"])  # ✅ передаём весь список
+    check_results = check_schedule(data["events"])
 
-    for event, result in zip(data["events"], schedule_results):
+    for event, result in zip(data["events"], check_results):
         if result["status"] == "confirmed":
             added_event = add_event_to_calendar(event)
             result["google_event_id"] = added_event.get("id")
