@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS  # <-- Добавлено
 from scheduler import check_schedule, current_events
 import os
 import json
@@ -8,6 +9,7 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
 app = Flask(__name__)
+CORS(app)  # <-- Инициализация CORS (разрешаем кросс-доменные запросы)
 
 SCOPES = ['https://www.googleapis.com/auth/calendar']
 GOOGLE_CREDENTIALS_B64 = os.environ.get("GOOGLE_CREDENTIALS_B64")
