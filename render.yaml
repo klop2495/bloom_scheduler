@@ -1,23 +1,23 @@
 services:
   - type: web
-    name: bloom-scheduler
+    name: bloom_scheduler
     env: python
+    plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: python main.py
     envVars:
       - key: GOOGLE_CREDENTIALS_B64
-        sync: false
-      - key: OPENAI_API_KEY
-        sync: false
+        fromEnvVar: GOOGLE_CREDENTIALS_B64
 
 jobs:
   - type: cron
-    name: fetch-gpt-events
+    name: fetch-daily-events
+    schedule: "0 7 * * *" # 9:00 по Парижу (UTC+2 → UTC 7:00)
     env: python
-    schedule: "0 6 * * *"  # Запуск каждый день в 08:00 (UTC+2 = Paris)
     buildCommand: pip install -r requirements.txt
     startCommand: python fetch_events_from_gpt.py
     envVars:
       - key: OPENAI_API_KEY
-        sync: false
-
+        fromFile: /etc/secrets/OPENAI_API_KEY
+      - key: ASSISTANT_ID
+        fromFile: /etc/secrets/ASSISTANT_ID
